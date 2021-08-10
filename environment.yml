@@ -1,0 +1,19 @@
+name: lrsf_TESTING
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - fenics
+  - pip
+  - pip:
+    - h5py
+    - ipython
+    - notebook
+    - matplotlib
+    - openpyxl
+    - pyDOE
+    - pykeops
+    - pytest
+    - pandas
+    - scipy
+    - scikit-sparse
