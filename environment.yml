@@ -1,4 +1,4 @@
-name: lrsf_TESTING
+name: reacdiff
 channels:
   - conda-forge
   - defaults
