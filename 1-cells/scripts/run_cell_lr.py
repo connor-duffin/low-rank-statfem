@@ -6,15 +6,18 @@ import numpy as np
 from scipy.sparse import vstack
 
 from argparse import ArgumentParser
+
 from statbz.cell import Cell, StatCellLowRank
-from statbz.utils import (read_cell_data, build_observation_operator,
-                          write_csr_matrix_hdf5)
+from statbz.utils import build_observation_operator, write_csr_matrix_hdf5
+
+from format_cell_data import read_cell_data
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 parser = ArgumentParser()
 parser.add_argument("--n_modes", type=int)
+parser.add_argument("--data_file", type=str)
 parser.add_argument("--output_file", type=str)
 args = parser.parse_args()
 
@@ -27,8 +30,7 @@ cell.setup_solve()
 post_lr = StatCellLowRank(2e-3, 100., settings, params, args.n_modes, 32)
 post_lr.setup_solve()
 
-data_file = "data/rsif-formatted.xlsx"
-dat = read_cell_data(data_file)
+dat = read_cell_data(args.data_file)
 
 x_u = post_lr.x_u
 x_v = post_lr.x_v

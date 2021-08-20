@@ -133,26 +133,3 @@ def read_csr_matrix_hdf5(h5_file, name, shape):
     indptr = h5_file[f"{name}/indptr"]
 
     return csr_matrix((data, indices, indptr), shape)
-
-
-def read_cell_data(filename):
-    """ Read the cell data from file in filename. """
-    dat = pd.read_excel(filename, engine="openpyxl")
-    names = dat.columns.values
-    names[1:4] = ["G1.0", "S/G2/M.0", "Total.0"]
-    dat.columns = pd.Index(names)
-
-    dat = pd.wide_to_long(dat,
-                          i="x",
-                          j="t",
-                          stubnames=["G1", "S/G2/M", "Total"],
-                          sep=".")
-    dat.columns = pd.Index(["u", "v", "total"])
-    dat = dat.astype({"u": np.float64, "v": np.float64, "total": np.float64})
-    dat = dat.reset_index("t")
-
-    # set the data scales appropriately
-    dat[["u", "v", "total"]] /= (1745 * 54 * 0.004)
-    dat["t"] *= 16.
-
-    return dat

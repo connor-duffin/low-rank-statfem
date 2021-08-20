@@ -63,14 +63,14 @@ def plot_rel_error():
     axs[0].set_xlabel("Time $t$")
     axs[0].set_ylabel(
         r"$ \Vert \mathbf{m}_n^u - \mathbf{u}_{\mathrm{true}}^n \Vert"
-        + r"/ \Vert \mathbf{m}_u^n \Vert$")
+        + r"/ \Vert \mathbf{u}_{\mathrm{true}}^n \Vert$")
 
     axs[1].plot(T, rel_error_v)
     axs[1].plot(T, sigma * np.ones_like(rel_error_v), "--")
     axs[1].set_xlabel("Time $t$")
     axs[1].set_ylabel(
         r"$ \Vert \mathbf{m}_v^n - \mathbf{v}_{\mathrm{true}}^n \Vert"
-        + r"/ \Vert \mathbf{m}_v^n \Vert $")
+        + r"/ \Vert \mathbf{u}_{\mathrm{true}}^n \Vert $")
     plt.savefig(FIGURES_DIR + "spiral-rel-error.png", dpi=300)
     plt.close()
 

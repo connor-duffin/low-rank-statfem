@@ -2,6 +2,14 @@
 
 This repo accompanies our recent paper on low-rank methods for scaling up
 statistical finite element methods to high-dimensional problems.
+The architecture consists of the `statbz` package, found in the `statbz`
+directory, and three separate directories for each of the case studies
+(`1-cells`, `2-spiral-wave`, `3-oscillatory`). Each of these accord to different
+models that we study in the paper.
+
+To run the examples, code is contained in a `Makefile` in each subdirectory to
+run the examples. Consult the relevant `Makefile` in each subdirectory to see
+what needs to be done for each example.
 
 ## Getting started
 
@@ -20,18 +28,55 @@ local `statbz` package locally:
 pip install -e statbz
 ```
 
-If you wanted, you can run the unit tests through doing
+If you wanted, you can run the unit tests through doing (from this directory)
 
 ```bash
 cd statbz
 python3 -m pytest tests
 ```
 
-This should now set you up to be able to run the examples from the paper. For
-example, to run the 1D cells example, with $k = 32$ modes, you can do:
+## Getting the data
+
+For the `cells` example, you need to download the data from:
+
+Simpson, M. J., Baker, R. E., Vittadello, S. T., & Maclaren, O. J. (2020).
+Practical parameter identifiability for spatio-temporal models of cell invasion.
+Journal of The Royal Society Interface, 17(164), 20200055.
+https://doi.org/10.1098/rsif.2020.0055
+
+This should then be saved as `1-cells/data/rsif-data.xlsx`, to accord with the
+local Makefile.
+
+
+## Running the examples
+
+With all this set up, you should be able to run the examples from the `Makefile`
+in the local directories. For example, for the cells example, running (from this directory)
 
 ```bash
 cd 1-cells
-python3 scripts/run_cell_lr.py
+make outputs/cell-post.h5
 ```
 
+Will run a statFEM model for the 1D cells example, computing the posterior
+distribution of the FEM coefficients using the extended Kalman filter. To run
+the low-rank statFEM, for the cells example, with 32 modes, simply do:
+
+```bash
+make outputs/cell-post-lr-32-modes.h5
+```
+
+The other examples are similar. All directories have a `Makefile` from which all
+the examples should be able to be run.
+
+## Generating the figures
+
+Having run the requisite results for each example, the figures can now be
+generated. Using the `Makefile`, once again for the cells example, these can be
+generated via
+
+```bash
+make plots_cell
+```
+
+Again, the other examples are similar. Just check the local `Makefile` in each.
