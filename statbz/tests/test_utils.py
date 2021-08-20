@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 
 from scipy.sparse import csr_matrix, rand
 from statbz.utils import (build_observation_operator, dolfin_to_csr,
-                          read_cell_data, read_csr_matrix_hdf5,
-                          write_csr_matrix_hdf5)
+                          read_csr_matrix_hdf5, write_csr_matrix_hdf5)
 
 
 def test_build_observation_operator():
