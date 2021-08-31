@@ -21,8 +21,18 @@ def boundary(x, on_boundary):
 
 def matern_covariance(grid, scale=1., ell=1., nu=2):
     """
-    Compute Matern covariance on grid `grid`, with scale parameter `scale`,
-    length parameter `ell` and smoothness `nu`.
+    Compute Matern covariance matrix.
+
+    Parameters
+    ----------
+    grid : ndarray
+        Spatial grid of shape (n_points, n_dimensions).
+    scale : float
+        Variance hyperparameter.
+    ell : float
+        Length-scale hyperparameter.
+    nu : float
+        Smoothness parameter.
     """
     kappa = np.sqrt(2 * nu) / ell
     dist = pdist(grid, metric="euclidean")
@@ -36,6 +46,7 @@ def matern_covariance(grid, scale=1., ell=1., nu=2):
 
 
 def matern_spectral_density(omega, scale=1., ell=1., nu=2):
+    """Matern spectral density. """
     kappa = np.sqrt(2 * nu) / ell
     s = (scale**2 * np.sqrt(4 * np.pi) * gamma(nu + 1 / 2) * kappa**(2 * nu) /
          gamma(nu) * (kappa**2 + 4 * np.pi**2 * omega**2)**(-(nu + 1 / 2)))
@@ -43,10 +54,22 @@ def matern_spectral_density(omega, scale=1., ell=1., nu=2):
 
 
 def cov_approx_keops(grid, scale, ell, k=32):
-    """Approximate a squared-exponential covariance matrix using KeOps.
+    """
+    Approximate a squared-exponential covariance matrix using KeOps.
 
     If a GPU device is detected then it will use this to accelerate
     computations.
+
+    Parameters
+    ----------
+    grid : ndarray
+        Spatial grid of shape (n_points, n_dimensions).
+    scale : float
+        Variance hyperparameter.
+    ell : float
+        Length-scale hyperparameter.
+    k : int
+        Number of desired eigenvalues.
     """
     from pykeops.config import gpu_available
     logger.info("Approximating GP with KeOps, using GPU: %s",
@@ -74,7 +97,18 @@ def cov_approx_keops(grid, scale, ell, k=32):
 
 
 def sq_exp_covariance(grid, scale, ell):
-    """Squared exponential covariance function. """
+    """
+    Squared exponential covariance function.
+
+    Parameters
+    ----------
+    grid : ndarray
+        Spatial grid of shape (n_points, n_dimensions).
+    scale : float
+        Variance hyperparameter.
+    ell : float
+        Length-scale hyperparameter.
+    """
     dist = pdist(grid, metric="euclidean")
     dist = squareform(dist)
 
@@ -96,6 +130,8 @@ def cov_approx(V, k=64, scale=1., ell=1., bc="Dirichlet"):
     Solin, A., Särkkä, S., 2020. Hilbert space methods for reduced-rank
     Gaussian process regression. Stat Comput 30, 419–446.
     https://doi.org/10.1007/s11222-019-09886-w
+
+
     """
     bc_types = ["Dirichlet", "Neumann"]
     if bc not in bc_types:
@@ -152,7 +188,10 @@ def cov_approx(V, k=64, scale=1., ell=1., bc="Dirichlet"):
 
 
 def cov_kron_evd(K, n_modes=6):
-    """Compute the leading `n_modes` eigenvalue/vector pairs of kron(K, K). """
+    """
+    (DEPRECATED) Compute the leading `n_modes` eigenvalue/vector pairs of
+    kron(K, K).
+    """
     n = K.shape[0]
     vecs = np.zeros((n**2, n_modes))
     vals_K, vecs_K = eigh(K)
@@ -171,7 +210,10 @@ def cov_kron_evd(K, n_modes=6):
 
 
 def cov_fenics_evd(scale, ell, V, n_modes=6):
-    """ Compute the EVD of a cov. matrix defined over V (assumed 2D grid). """
+    """
+    (DEPRECATED) Compute the EVD of a cov. matrix defined over V (assumed
+    2D grid).
+    """
     grid_fenics = V.tabulate_dof_coordinates()
     idx_sorted = np.lexsort((grid_fenics[:, 1], grid_fenics[:, 0]))
 
@@ -190,6 +232,10 @@ def cov_fenics_evd(scale, ell, V, n_modes=6):
 
 
 def cov_fenics_chol(scale, ell, grid_fenics):
+    """
+    (DEPRECATED) Compute the Cholesky decomposition of a cov. matrix defined
+    over V (assumed 2D grid).
+    """
     idx_sorted = np.lexsort((grid_fenics[:, 1], grid_fenics[:, 0]))
 
     # P : fenics ordering -> kronecker ordering, and

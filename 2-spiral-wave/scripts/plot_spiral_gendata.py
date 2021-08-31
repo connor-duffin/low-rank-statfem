@@ -20,12 +20,12 @@ def plot_ic():
                             sharex=True,
                             sharey=True)
     im = axs[0].tricontourf(x1, x2, u0, 64, vmin=vmin, vmax=vmax)
-    axs[0].set_title(r"$\mathbf{m}_u^0$")
+    axs[0].set_title(r"$\mathbf{m}_0^u$")
     axs[0].set_ylabel("$x_2$")
     axs[0].set_xlabel("$x_1$")
 
     im = axs[1].tricontourf(x1, x2, u0_dgp, 64, vmin=vmin, vmax=vmax)
-    axs[1].set_title(r"$\mathbf{u}_{\mathrm{true}}^0$")
+    axs[1].set_title(r"$\mathbf{u}_{0, \mathrm{true}}$")
     axs[1].set_xlabel("$x_1$")
 
     fig.colorbar(im, ax=axs)
@@ -62,15 +62,15 @@ def plot_rel_error():
     axs[0].plot(T, sigma * np.ones_like(rel_error_u), "--")
     axs[0].set_xlabel("Time $t$")
     axs[0].set_ylabel(
-        r"$ \Vert \mathbf{m}_n^u - \mathbf{u}_{\mathrm{true}}^n \Vert"
-        + r"/ \Vert \mathbf{u}_{\mathrm{true}}^n \Vert$")
+        r"$ \Vert \mathbf{m}_n^u - \mathbf{u}_{n, \mathrm{true}} \Vert"
+        + r"/ \Vert \mathbf{u}_{n, \mathrm{true}} \Vert$")
 
     axs[1].plot(T, rel_error_v)
     axs[1].plot(T, sigma * np.ones_like(rel_error_v), "--")
     axs[1].set_xlabel("Time $t$")
     axs[1].set_ylabel(
-        r"$ \Vert \mathbf{m}_v^n - \mathbf{v}_{\mathrm{true}}^n \Vert"
-        + r"/ \Vert \mathbf{u}_{\mathrm{true}}^n \Vert $")
+        r"$ \Vert \mathbf{m}_n^v - \mathbf{v}_{n, \mathrm{true}} \Vert"
+        + r"/ \Vert \mathbf{u}_{n, \mathrm{true}} \Vert $")
     plt.savefig(FIGURES_DIR + "spiral-rel-error.png", dpi=300)
     plt.close()
 
@@ -100,12 +100,12 @@ def plot_post_mean_data(idx):
     plt.colorbar(im, ax=axs[0])
     axs[0].set_ylabel(r"$x_2$")
     axs[0].set_xlabel(r"$x_1$")
-    axs[0].set_title(r"$\mathbf{m}_u^n$")
+    axs[0].set_title(r"$\mathbf{m}_n^u$")
 
     im = axs[1].tricontourf(X[:, 0], X[:, 1], vi_post, 64)
     plt.colorbar(im, ax=axs[1])
     axs[1].set_xlabel(r"$x_1$")
-    axs[1].set_title(r"$\mathbf{m}_v^n$")
+    axs[1].set_title(r"$\mathbf{m}_n^v$")
 
     im = axs[2].scatter(x_obs[:, 0], x_obs[:, 1], c=yi, marker=".")
     plt.colorbar(im, ax=axs[2])
@@ -134,13 +134,13 @@ def plot_post_var(idx):
                             sharex=True,
                             sharey=True)
     im = axs[0].tricontourf(x1, x2, var_u, 64)
-    axs[0].set_title(r"$\mathrm{var}(\mathbf{u}^n)$")
+    axs[0].set_title(r"$\mathrm{var}(\mathbf{u}_n)$")
     axs[0].set_ylabel("$x_2$")
     axs[0].set_xlabel("$x_1$")
     fig.colorbar(im, ax=axs[0], format=formatter)
 
     im = axs[1].tricontourf(x1, x2, var_v, 64)
-    axs[1].set_title(r"$\mathrm{var}(\mathbf{v}^n)$")
+    axs[1].set_title(r"$\mathrm{var}(\mathbf{v}_n)$")
     axs[1].set_xlabel("$x_1$")
     fig.colorbar(im, ax=axs[1], format=formatter)
 
@@ -157,6 +157,12 @@ def plot_modes(idx, colorbar=False, n_modes=8):
                             figsize=(11.5, 4),
                             sharex=True,
                             sharey=True)
+    for ax in axs[:, 0]:
+        ax.set_ylabel(r"$x_2$")
+
+    for ax in axs[1, :]:
+        ax.set_xlabel(r"$x_1$")
+
     axs = axs.flatten()
 
     from matplotlib.ticker import ScalarFormatter

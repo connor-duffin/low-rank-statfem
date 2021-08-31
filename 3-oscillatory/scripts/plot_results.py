@@ -53,8 +53,8 @@ def plot_error(t, u_dgp, u_prior, u_post, v_dgp, v_prior, v_post, filename):
     ax.legend()
     ax.set_xlabel(r"Time $t$")
     ax.set_ylabel(
-        r"$\Vert \mathbf{m}_n - \mathbf{w}_{\mathrm{true}}^n \Vert /" +
-        r"\Vert \mathbf{w}_{\mathrm{true}}^n \Vert$")
+        r"$\Vert \mathbf{m}_n - \mathbf{w}_{n, \mathrm{true}} \Vert /" +
+        r"\Vert \mathbf{w}_{n, \mathrm{true}} \Vert$")
 
     plt.savefig(filename, dpi=400)
     plt.close()

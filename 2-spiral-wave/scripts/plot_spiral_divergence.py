@@ -32,7 +32,7 @@ axins = axs[0].inset_axes([0.5, 0.25, 0.4, 0.35])
 axins.semilogy(u_norm_cn[:20], "o", label="CN")
 axins.semilogy(u_norm_imex[:20], label="IMEX")
 axs[0].indicate_inset_zoom(axins, alpha=0.5, edgecolor="black")
-axs[0].set_ylabel(r"$\Vert \mathbf{m}_u^n \Vert$")
+axs[0].set_ylabel(r"$\Vert \mathbf{m}_n^u \Vert$")
 axs[0].legend(loc="upper right")
 
 axs[1].plot(eff_rank_cn, label="CN")

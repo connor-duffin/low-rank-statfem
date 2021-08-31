@@ -14,6 +14,7 @@ fe.set_log_level(40)
 
 
 class InitialCondition(fe.UserExpression):
+    """Rectangle function initial conditions. """
     def eval(self, value, x):
         if x <= 400 or x >= 900:
             value[0] = 0.055
@@ -24,6 +25,30 @@ class InitialCondition(fe.UserExpression):
 
 
 class Cell:
+    """
+    Class to run the deterministic FEM model for the cells example.
+
+    Uses a first-order basis function approximation (CG1), with a uniform mesh.
+
+    Parameters
+    ----------
+    settings : dict
+        Containing the following keys
+        L : float
+            Length of problem domain.
+        nx : int
+            Number of cells for FEM discretization.
+        dt : float
+            Size of timesteps.
+    params : dict
+        Containing the following keys
+        ku : float
+            Reaction rate paramter.
+        kv : float
+            Reaction rate paramter.
+        D : float
+            Diffusion coefficient.
+    """
     def __init__(self, settings, params):
         self.L = settings["L"]
         self.nx = settings["nx"]
@@ -76,7 +101,13 @@ class Cell:
         self.J_prev = fe.derivative(self.F, self.w_prev)
 
     def setup_solve(self, ic="rectangle"):
-        """ Set the initial conditions and the abstract solver. """
+        """
+        Set the initial conditions and the abstract solver.
+
+        Parameters
+        ----------
+            ic : string, optional
+        """
         ic_rectangle = InitialCondition()
         self.w.interpolate(ic_rectangle)
         self.w_prev.interpolate(ic_rectangle)
@@ -98,10 +129,17 @@ class Cell:
         self.solver = fe.NonlinearVariationalSolver(problem)
 
     def timestep(self):
+        """Increment the model forward `self.dt` units in time. """
         self.solver.solve()
         self.w_prev.assign(self.w)
 
     def set_w_from_vector(self, a):
+        """
+        Parameters
+        ----------
+        a : ndarray
+            Vector to set the values of `w` to, on the mesh.
+        """
         assert type(a) == np.ndarray
         self.w.vector()[:] = np.copy(a)
         self.w_prev.vector()[:] = np.copy(a)
@@ -118,8 +156,22 @@ class Cell:
 
 
 class StatCell(Cell):
+    """Full-rank statFEM for the cells problem.
+
+    Runs an extended Kalman filter, built with the statFEM construction.
+
+    Parameters
+    ----------
+    scale : float
+        Variance hyperparameter of stochastic forcing (xi).
+    ell : float
+        Length-scale hyperparameter of stochastic forcing (xi).
+    settings : dict
+        Same as for `Cell` class.
+    params : dict
+        Same as for `Cell` class.
+    """
     def __init__(self, scale, ell, settings, params):
-        """ Initialize with set parameters. """
         super().__init__(settings=settings, params=params)
 
         self.mean = np.zeros((self.n_dofs, ))
@@ -132,6 +184,16 @@ class StatCell(Cell):
         self.sigma_y = params["sigma_y"]
 
     def timestep(self, y=None, H=None):
+        """
+        Push the model forward `self.dt` time units.
+
+        Parameters
+        ----------
+        y : ndarray
+            Observed data to be assimilated at current time.
+        H : ndarray or csr_matrix
+            Observation matrix for y.
+        """
         self.solver.solve()
         self.mean = self.w.vector()[:]
 
@@ -162,7 +224,16 @@ class StatCell(Cell):
         self.w_prev.assign(self.w)
 
     def _build_covariance(self, scale, ell):
-        """ Build the covariance matrix, for iid GPs on u and v. """
+        """
+        Build the covariance matrix, for iid GPs on u and v.
+
+        Parameters
+        ----------
+        scale : float
+            Variance hyperparameter.
+        ell : float
+            Variance hyperparameter.
+        """
         grid = self.V.tabulate_dof_coordinates()
         K = sq_exp_covariance(grid, np.sqrt(self.dt) * scale, ell)
         M = self._build_mass_matrix(self.V)
@@ -177,7 +248,14 @@ class StatCell(Cell):
         self.G = M @ K @ M.T
 
     def _build_mass_matrix(self, V):
-        """ Build the FEM mass matrix on the FunctionSpace V. """
+        """
+        Build the FEM mass matrix
+
+        Parameters
+        ---------
+        V : FunctionSpace
+            Function space on which to compute the mass matrix.
+        """
         u = fe.TrialFunction(V)
         v = fe.TestFunction(V)
         M = fe.assemble(fe.inner(u, v) * fe.dx)
@@ -185,6 +263,26 @@ class StatCell(Cell):
 
 
 class StatCellLowRank(StatCell):
+    """Full-rank statFEM for the cells problem.
+
+    Runs an low-rank extended Kalman filter, with the statFEM
+    construction.
+
+    Parameters
+    ----------
+    scale : float
+        Variance hyperparameter of stochastic forcing (xi).
+    ell : float
+        Length-scale hyperparameter of stochastic forcing (xi).
+    settings : dict
+        Same as for `Cell` class.
+    params : dict
+        Same as for `Cell` class.
+    n_modes : int
+        Number of modes to use in the filter.
+    n_modes_G : int
+        Number of modes to approximate the stochastic forcing covariance.
+    """
     def __init__(self, scale, ell, settings, params, n_modes, n_modes_G):
         super().__init__(scale=scale,
                          ell=ell,
@@ -205,6 +303,16 @@ class StatCellLowRank(StatCell):
         self.L_temp = np.zeros((self.n_dofs, n_modes + n_modes_G))
 
     def timestep(self, y=None, H=None):
+        """
+        Push the model forward `self.dt` time units.
+
+        Parameters
+        ----------
+        y : ndarray
+            Observed data to be assimilated at current time.
+        H : ndarray or csr_matrix
+            Observation matrix for y.
+        """
         self.solver.solve()
         self.mean = self.w.vector()[:]
 

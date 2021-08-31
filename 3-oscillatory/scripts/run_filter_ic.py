@@ -1,3 +1,4 @@
+"""Run LR-ExKF for the oscillatory example, mismatched ICs. """
 import h5py
 import logging
 
@@ -27,7 +28,7 @@ args = parser.parse_args()
 RHO = args.rho
 OUTPUT_FILE = args.output_file
 
-
+# simulation settings (as expected)
 N_OBS, NT = 512, 1000
 N_MODES, N_MODES_G = 128, 64
 ELL, SIGMA = 2e-4, 10., 1e-2
@@ -50,7 +51,7 @@ with h5py.File(f"data/bz-antispiral-ic-256.h5", "r") as f:
     u_init = np.copy(f["u"][:])
     v_init = np.copy(f["v"][:])
 
-    np.testing.assert_allclose(x_init, dgp.x_u)
+    np.testing.assert_allclose(x_init, dgp.x_u)  # sanity check
 
     ic = np.zeros((dgp.n_dofs, ))
     ic[dgp.u_dofs] = u_init
@@ -64,15 +65,18 @@ dgp.setup_solve(ic)
 prior = Oregonator(SETTINGS, PARAMS)
 prior.setup_solve(ic_jitter)
 
+# set the variance to scale=1. in case running parameter estimation
 post = StatOregonator(N_MODES, N_MODES_G, 1., ELL, SETTINGS, PARAMS)
 post.setup_solve(ic_jitter)
 post.set_hparam_inits(RHO, SIGMA, fixed_sigma=False)
 
+# required for the observation operator
 if SETTINGS["error_variable"] == "u":
     error_subspace = 0
 else:
     error_subspace = 1
 
+# set up observation grid
 x_lhs = SETTINGS["L"] * lhs(2, N_OBS, "m")
 H = build_observation_operator(x_lhs, post.V, sub=error_subspace)
 logger.info("H.shape (obs. operator) = %s", H.shape)
@@ -119,12 +123,12 @@ x_obs = output.create_dataset("x_obs", data=x_lhs)
 u_dofs_output = output.create_dataset("u_dofs", data=post.u_dofs)
 v_dofs_output = output.create_dataset("v_dofs", data=post.v_dofs)
 
-# main loop
-for i in range(NT):
+for i in range(NT):  # run statFEM timestepping
     logger.info("Iteration %d / %d", i + 1, NT)
     dgp.timestep()
     prior.timestep()
 
+    # data is observed at all timesteps
     w_vec = np.copy(dgp.w.vector()[:])
     y = H @ w_vec
     y += np.random.normal(scale=SIGMA, size=y.shape)
@@ -138,6 +142,7 @@ for i in range(NT):
     logger.info("L^2 norm difference between prior and DGP: %e",
                 np.linalg.norm(u_prior - u_dgp) / np.linalg.norm(u_dgp))
 
+    # store outputs from the run
     u_output[i, :] = np.copy(post.u)
     u_prior_output[i, :] = np.copy(prior.u)
     u_dgp_output[i, :] = np.copy(dgp.u)

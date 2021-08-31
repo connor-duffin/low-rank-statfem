@@ -49,8 +49,8 @@ def plot_error(t, prior_error, filename, *args):
     ax.indicate_inset_zoom(axins, alpha=1., edgecolor="black")
     ax.set_xlabel(r"Time $t$")
     ax.set_ylabel(
-        r"$\Vert \mathbf{m}_u^n - \mathbf{u}_{\mathrm{true}}^n \Vert" +
-        r"/ \Vert \mathbf{u}_{\mathrm{true}}^n \Vert$"
+        r"$\Vert \mathbf{m}_n^u - \mathbf{u}_{n, \mathrm{true}} \Vert" +
+        r"/ \Vert \mathbf{u}_{n, \mathrm{true}} \Vert$"
     )
 
     plt.savefig(filename, dpi=400)
@@ -95,6 +95,13 @@ def plot_modes(t, k, L, filename, rho):
                            sharex=True,
                            sharey=True,
                            figsize=(6, 4))
+
+    for a in ax[:, 0]:
+        a.set_ylabel(r"$x_2$")
+
+    for a in ax[1, :]:
+        a.set_xlabel(r"$x_1$")
+
     ax = ax.flatten()
 
     from matplotlib.ticker import ScalarFormatter
@@ -129,9 +136,9 @@ def plot_u0(u0, u0_true, filename):
                             64,
                             vmin=color_min,
                             vmax=color_max)
-    axs[0].set_title(r"$\mathbf{m}_u^0$")
+    axs[0].set_title(r"$\mathbf{m}_0^u$")
     axs[0].set_xlabel(r"$x_1$")
-    axs[1].set_xlabel(r"$x_2$")
+    axs[0].set_ylabel(r"$x_2$")
 
     axs[1].tricontourf(x[:, 0],
                        x[:, 1],
@@ -139,7 +146,7 @@ def plot_u0(u0, u0_true, filename):
                        64,
                        vmin=color_min,
                        vmax=color_max)
-    axs[1].set_title(r"$\mathbf{u}_{\mathrm{true}}^0$")
+    axs[1].set_title(r"$\mathbf{u}_{0, \mathrm{true}}$")
     axs[1].set_xlabel(r"$x_1$")
     plt.colorbar(im, ax=axs[1])
     plt.savefig(filename, dpi=400)

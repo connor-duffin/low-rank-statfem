@@ -1,3 +1,4 @@
+"""Run LR-ExKF for the oscillatory regime, estimating hyperparameters. """
 import h5py
 import logging
 import argparse
@@ -12,7 +13,6 @@ from statbz.utils import build_observation_operator
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-
 # set options from the command line
 parser = argparse.ArgumentParser()
 parser.add_argument("--dt", type=float)
@@ -20,21 +20,25 @@ parser.add_argument("--scheme", type=str)
 parser.add_argument("--output_file", type=str)
 args = parser.parse_args()
 
-
+# remaining simulation settings
 N_OBS, NT = 512, 1000
 N_MODES, N_MODES_G = 128, 128
 RHO, ELL, SIGMA = 1e-3, 10., 1e-2
 PARAMS = {"f": 0.95, "q": 0.002, "eps": 0.75, "Du": 0.001, "Dv": 0.001}
-SETTINGS = {"L": 50, "nx": 128, "dt": 1e-2,
-            "error_variable": "u", "correction": True, "scheme": "imex"}
-
+SETTINGS = {
+    "L": 50,
+    "nx": 128,
+    "dt": 1e-2,
+    "error_variable": "u",
+    "correction": True,
+    "scheme": "imex"
+}
 
 if args.dt is not None:
     SETTINGS.update({"dt": args.dt})
 
 if args.scheme is not None:
     SETTINGS.update({"scheme": args.scheme})
-
 
 # setup statbz objects
 # set initial conditions from previous simulation
@@ -59,7 +63,6 @@ post = StatOregonator(N_MODES, N_MODES_G, 1., ELL, SETTINGS, PARAMS)
 post.setup_solve(ic)
 post.set_hparam_inits(RHO, SIGMA, fixed_sigma=False)
 
-
 # setup observation process
 x_lhs = SETTINGS["L"] * lhs(2, N_OBS, "m")
 H = build_observation_operator(x_lhs, post.V, sub=0)
@@ -71,7 +74,6 @@ w_obs_np = H @ (post.w.vector()[:])
 for i in range(H.shape[0]):
     post.w.eval(temp, x_lhs[i, :])
     np.testing.assert_approx_equal(w_obs_np[i], temp[0])
-
 
 # output storage
 output = h5py.File(args.output_file, "w")
@@ -108,7 +110,6 @@ x_obs = output.create_dataset("x_obs", data=x_lhs)
 u_dofs_output = output.create_dataset("u_dofs", data=post.u_dofs)
 v_dofs_output = output.create_dataset("v_dofs", data=post.v_dofs)
 
-
 # main loop
 for i in range(NT):
     logger.info("Iteration %d / %d", i + 1, NT)
@@ -129,7 +130,7 @@ for i in range(NT):
                 np.linalg.norm(u_prior - u_dgp) / np.linalg.norm(u_dgp))
 
     if i == 1:
-        # sanity check diagonal of LL'
+        # sanity check that the faster way of computing the variance
         np.testing.assert_allclose(np.diag(post.L_cov @ post.L_cov.T),
                                    np.sum(post.L_cov**2, axis=1))
 

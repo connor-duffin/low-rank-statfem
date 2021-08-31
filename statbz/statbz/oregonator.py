@@ -17,7 +17,8 @@ fe.set_log_level(20)
 
 
 class InitialCondition(fe.UserExpression):
-    """Initial conditions to generate spiral waves.
+    """
+    Initial conditions to generate spiral waves.
 
     From:
     Jahnke, W., Skaggs, W.E., Winfree, A.T., 1989.
@@ -25,6 +26,15 @@ class InitialCondition(fe.UserExpression):
     two-variable oregonator model.
     J. Phys. Chem. 93, 740–749.
     https://doi.org/10.1021/j100339a047
+
+    Parameters
+    ----------
+    f : float
+        Oregonator PDE parameter
+    q : float
+        Oregonator PDE parameter
+    L : float
+        Length of domain (e.g. 50 units).
     """
     def __init__(self, f, q, L):
         self.f = f
@@ -51,6 +61,16 @@ class InitialCondition(fe.UserExpression):
 
 
 class RandomInitialCondition(fe.UserExpression):
+    """
+    Random initial condition, with values chosen from the ODE attractor.
+
+    Parameters
+    ----------
+    f : float
+        Oregonator PDE parameter
+    q : float
+        Oregonator PDE parameter
+    """
     def __init__(self, f, q):
         self.f = f
         self.q = q
@@ -65,6 +85,37 @@ class RandomInitialCondition(fe.UserExpression):
 
 
 class Oregonator:
+    """
+    Deterministic FEM solver for the Oregonator equations.
+    Uses CG1 elements and Crank-Nicolson to discretize.
+
+    Parameters
+    ----------
+    settings : dict
+        Containing the following keys
+        L : float
+            Length of problem domain.
+        nx : int
+            Number of cells for FEM discretization.
+        dt : float
+            Size of timesteps.
+        correction : bool
+            Whether to correct for negative nodes.
+        scheme : str, optional
+            One of 'crank-nicolson' (default) or 'imex'.
+    params : dict
+        Containing the following keys for the Oregonator PDE parameters.
+        f : float
+            Stoichiometry parameter.
+        q : float
+            Reaction rates parameter.
+        eps : float
+            Excitability parameter.
+        Du : float
+            Diffusion coefficient for the `u` component.
+        Dv : float
+            Diffusion coefficient for the `v` component.
+    """
     def __init__(self, settings, params):
         self.L = settings["L"]
         self.nx = settings["nx"]
@@ -144,7 +195,14 @@ class Oregonator:
         self.J_prev = fe.derivative(self.F, self.w_prev)
 
     def setup_solve(self, initial_condition="spiral"):
-        """ Set the initial conditions and the abstract solver. """
+        """
+        Set the initial conditions and the abstract solver.
+
+        Parameters
+        ----------
+        initial_conditions : ndarray or str, optional
+            Either a numpy array of the IC, or, a string telling what to do.
+        """
         if type(initial_condition) == np.ndarray:
             self.set_w_from_vector(initial_condition)
         else:
@@ -167,6 +225,7 @@ class Oregonator:
         prm["snes_solver"]["line_search"] = "bt"
 
     def timestep(self):
+        """Compute the next timestep. """
         self.solver.solve()
 
         if self.correction:
@@ -175,6 +234,7 @@ class Oregonator:
         self.w_prev.assign(self.w)
 
     def concentration_correction(self):
+        """Correct for negative entries in FEM state vector. """
         u = self.w.vector()[self.u_dofs]
         logger.info(f"{np.sum(u < self.q)} dofs below threshold")
         w_copy = self.w.vector()[:]
@@ -183,22 +243,38 @@ class Oregonator:
         self.w.vector()[:] = np.copy(w_copy)
 
     def set_w_from_vector(self, a):
+        """
+        Set the current solution vector to an array.
+
+        Parameters
+        ----------
+        a : ndarray
+            Array to set the current solution to.
+        """
         assert type(a) == np.ndarray
         self.w.vector()[:] = np.copy(a)
         self.w_prev.vector()[:] = np.copy(a)
 
     def set_w_prev(self, a=None):
-        """ Set w_prev to the np.array a; if a is None then w_prev = w. """
+        """
+        Set w_prev to the np.array a; if a is None then w_prev = w.
+
+        Parameters
+        ----------
+        a : ndarray or None, optional
+        """
         if a is None:
             a = self.w.vector()[:]
 
         self.w_prev.vector()[:] = np.copy(a)
 
     def set_u_from_v(self):
+        """Set the `u` vector to the `v` vector. """
         v_vec = self.w.vector()[self.v_dofs]
         self.w.vector()[self.u_dofs] = np.copy(v_vec)
 
     def set_v_from_u(self):
+        """Set the `v` vector to the `u` vector. """
         u_vec = self.w.vector()[self.u_dofs]
         self.w.vector()[self.v_dofs] = np.copy(u_vec)
 
@@ -214,6 +290,42 @@ class Oregonator:
 
 
 class StochasticOregonator(Oregonator):
+    """
+    Stochastic Oregonator equation with Gaussian process (GP) RHS.
+
+    Parameters
+    ----------
+    scale : float
+        Variance hyperparameter of GP.
+    ell : float
+        Length-scale hyperparameter of GP.
+    settings : dict
+        Containing the following keys
+        L : float
+            Length of problem domain.
+        nx : int
+            Number of cells for FEM discretization.
+        dt : float
+            Size of timesteps.
+        correction : bool
+            Whether to correct for negative nodes.
+        scheme : str, optional
+            One of 'crank-nicolson' (default) or 'imex'.
+        error_variable : str, optional
+            Which variable to place the GP forcing on.
+    params : dict
+        Containing the following keys for the Oregonator PDE parameters.
+        f : float
+            Stoichiometry parameter.
+        q : float
+            Reaction rates parameter.
+        eps : float
+            Excitability parameter.
+        Du : float
+            Diffusion coefficient for the `u` component.
+        Dv : float
+            Diffusion coefficient for the `v` component.
+    """
     def __init__(self, scale, ell, settings, params):
         super().__init__(settings=settings, params=params)
 
@@ -246,6 +358,9 @@ class StochasticOregonator(Oregonator):
         self.xi_cov_chol = cholesky(self.xi_cov, lower=True)
 
     def timestep(self):
+        """
+        Compute a single timestep of the stochastic Oregonator.
+        """
         z = np.random.normal(size=(self.xi_dofs.shape[0], ))
         xi_sample = self.xi_cov_chol @ z
         self.xi.vector()[self.xi_dofs] = xi_sample
@@ -257,6 +372,54 @@ class StochasticOregonator(Oregonator):
 
 
 class StatOregonator(Oregonator):
+    """
+    Statistical Oregonator equation with Gaussian process (GP) RHS.
+
+    Runs statFEM with CG1 elements and Crank-Nicolson time discretization, and
+    uses the low-rank Extended Kalman filter to update the solution.
+
+    Parameters
+    ----------
+    n_modes : int
+        Number of modes to approximate the covariance matrix with.
+    n_modes_G : int
+        Number of modes to approximate the GP covariance matrix with.
+    scale : float
+        Variance hyperparameter of GP.
+    ell : float
+        Length-scale hyperparameter of GP.
+    settings : dict
+        Containing the following keys
+        L : float
+            Length of problem domain.
+        nx : int
+            Number of cells for FEM discretization.
+        dt : float
+            Size of timesteps.
+        correction : bool
+            Whether to correct for negative nodes.
+        scheme : str, optional
+            One of 'crank-nicolson' (default) or 'imex'.
+        error_variable : str, optional
+            Which variable to place the GP forcing on.
+        approx_gp : bool, optional
+            Whether the approximate the GP with the Hilbert-GP methodology.
+        keops_gp : bool, optional
+            Whether to use KeOps to compute the GP eigenvalues. Recommended if
+            you have a GPU available and have linked to the KeOps.
+    params : dict
+        Containing the following keys for the Oregonator PDE parameters.
+        f : float
+            Stoichiometry parameter.
+        q : float
+            Reaction rates parameter.
+        eps : float
+            Excitability parameter.
+        Du : float
+            Diffusion coefficient for the `u` component.
+        Dv : float
+            Diffusion coefficient for the `v` component.
+    """
     def __init__(self, n_modes, n_modes_G, scale, ell, settings, params):
         super().__init__(settings=settings, params=params)
 
@@ -303,9 +466,7 @@ class StatOregonator(Oregonator):
         else:
             # exact EVD, dense covariance
             K = sq_exp_covariance(x_eigen, scale=scale, ell=ell)
-            self.G_vals, self.G_vecs = eigsh(K,
-                                             self.n_modes_G,
-                                             which="LM")
+            self.G_vals, self.G_vecs = eigsh(K, self.n_modes_G, which="LM")
             self.G_vecs[:] = M @ self.G_vecs
 
         logger.info("G_vals range: %e to %e", self.G_vals[-1], self.G_vals[0])
@@ -324,6 +485,18 @@ class StatOregonator(Oregonator):
         self.fixed_sigma = False  # backwards compatibility
 
     def set_hparam_inits(self, rho, sigma, fixed_sigma=False):
+        """
+        Set the hyperaparameter values in case of estimation.
+
+        Parameters
+        ----------
+        rho : float
+            Variance hyperparameter of GP.
+        sigma : float
+            Observation noise.
+        fixed_sigma : bool, optional
+            Whether or not to fixed the noise.
+        """
         self.fixed_sigma = fixed_sigma
         self.rho = rho
         self.sigma = sigma
@@ -331,6 +504,24 @@ class StatOregonator(Oregonator):
 
     def log_marginal_posterior(self, params, y, H, mean_obs, C_obs,
                                G_base_obs):
+        """
+        Log marginal posterior at the current time, for parameter estimation.
+
+        Parameters
+        ----------
+        params : tuple of float
+            Tuple of parameter values: (rho, sigma).
+        y : ndarray
+            Observed data at current time.
+        H : ndarray-like
+            Observation operator at current time.
+        mean_obs : ndarray
+            Projected (observed) statFEM mean at current time.
+        C_obs : ndarray
+            Projected (observed) statFEM covariance at current time.
+        G_base_obs : ndarray
+            Projected (observed) statFEM stochastic forcing covariance.
+        """
         rho, sigma = params
         priors = self.priors
 
@@ -373,6 +564,25 @@ class StatOregonator(Oregonator):
 
     def log_marginal_posterior_fixed_sigma(self, rho, y, H, mean_obs, C_obs,
                                            G_base_obs):
+        """
+        Log marginal posterior (fixed sigma) at the current time, for parameter
+        estimation.
+
+        Parameters
+        ----------
+        rho : float
+            Parameter value of rho.
+        y : ndarray
+            Observed data at current time.
+        H : ndarray-like
+            Observation operator at current time.
+        mean_obs : ndarray
+            Projected (observed) statFEM mean at current time.
+        C_obs : ndarray
+            Projected (observed) statFEM covariance at current time.
+        G_base_obs : ndarray
+            Projected (observed) statFEM stochastic forcing covariance.
+        """
         sigma = self.sigma
         priors = self.priors
 
@@ -405,7 +615,17 @@ class StatOregonator(Oregonator):
         return (lp, grad)
 
     def optimize_lmp(self, current_values, *args):
-        """ Wrapper function for optimizing the LMP. """
+        """
+        Wrapper function for optimizing the LMP.
+
+        Parameters
+        ----------
+        current_values : float or tuple
+            Current values of parameter estimates: float for rho only, tuple
+            for both (rho, sigma).
+        args : list
+            Positional arguments to be passed into `log_marginal_posterior`.
+        """
         if self.fixed_sigma:
             bounds = [(1e-12, None)]
             inits = np.random.uniform(0, 1e-3, size=1)
@@ -436,6 +656,19 @@ class StatOregonator(Oregonator):
             return out
 
     def timestep(self, y=None, H=None, estimate_params=False):
+        """
+        Run the statFEM model for a single timestep, updating coeficients if
+        data are observed.
+
+        Parameters
+        ----------
+        y : ndarray, optional
+            Observed data to be assimilated at current time.
+        H : ndarray-like, optional
+            Observation matrix for y.
+        estimate_params : bool
+            Flag to estimate parameters or not, at the current time.
+        """
         self.solver.solve()
         self.concentration_correction()
 
@@ -495,7 +728,14 @@ class StatOregonator(Oregonator):
         self.w_prev.assign(self.w)
 
     def _build_permutation_matrix(self, subs=0):
-        """Build permutation matrix that maps from V(subs) to V. """
+        """
+        Build permutation matrix that maps from V(subs) to V.
+
+        Parameters
+        ----------
+        subs : int, optional
+            FunctionSpace subspace to build the permutation matrix on.
+        """
         if subs == 0:
             dofs_sub = self.u_dofs
         elif subs == 1:
@@ -512,7 +752,14 @@ class StatOregonator(Oregonator):
         self.P = self.P.tocsr()
 
     def _build_mass_matrix(self, V):
-        """Build the FEM mass matrix (Neumann BCs) on V. """
+        """
+        Build the FEM mass matrix (Neumann BCs) on V.
+
+        Parameters
+        ----------
+        V : fenics.FunctionSpace
+            FunctionSpace to compute the mass matrix on.
+        """
         u = fe.TrialFunction(V)
         v = fe.TestFunction(V)
         M = fe.assemble(u * v * fe.dx)

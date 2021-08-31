@@ -1,19 +1,21 @@
 import h5py
 import logging
 
-from fenics import *
-from petsc4py.PETSc import Mat
-
 import numpy as np
-import pandas as pd
+import fenics as fe
 
 from scipy.sparse import csr_matrix
+from petsc4py.PETSc import Mat
 
 logger = logging.getLogger(__name__)
 
 
 def thin_simulation(filename, thin=50):
-    """ Thin a hdf5 output file from Oregonator simulations. """
+    """
+    Thin a hdf5 output file from Oregonator simulations.
+
+    Old function that is left as-is for backwards compatibility.
+    """
     output = h5py.File(filename, "r")
     output_new = h5py.File("../outputs/bz-antispiral.h5", "w")
 
@@ -40,9 +42,14 @@ def thin_simulation(filename, thin=50):
 def dolfin_to_csr(A):
     """
     Convert assembled matrix to scipy CSR.
+
+    Parameters
+    ----------
+    A : fenics.Matrix or PETSc4py.Mat
+        Sparse matrix to convert to scipy csr matrix.
     """
     if type(A) != Mat:
-        mat = as_backend_type(A).mat()
+        mat = fe.as_backend_type(A).mat()
     else:
         mat = A
     csr = csr_matrix(mat.getValuesCSR()[::-1], shape=mat.size)
@@ -55,6 +62,17 @@ def build_observation_operator(x_obs, V, sub=0, out="scipy"):
     assumes that the observations are from the first sub-function of V.
 
     From the fenics forums.
+
+    Parameters
+    ----------
+    x_obs : ndarray-like
+        Grid on which we want to interpolate the FEM solution on.
+    V : fenics.FunctionSpace
+        FunctionSpace that the FEM solution is an element of.
+    sub : int, optional
+        Subspace of the functionspace that the FEM solution is an element of.
+    out : str, optional
+        Output type, either "scipy" or "petsc"
     """
     nx, dim = x_obs.shape
     mesh = V.mesh()
@@ -81,11 +99,11 @@ def build_observation_operator(x_obs, V, sub=0, out="scipy"):
     for k in range(nx):
         x = x_obs[k, :]
         if dim == 1:
-            p = Point(x[0])
+            p = fe.Point(x[0])
         elif dim == 2:
-            p = Point(x[0], x[1])
+            p = fe.Point(x[0], x[1])
         elif dim == 3:
-            p = Point(x[0], x[1], x[2])
+            p = fe.Point(x[0], x[1], x[2])
         else:
             logger.error("no support for higher dims")
             raise ValueError
@@ -110,15 +128,26 @@ def build_observation_operator(x_obs, V, sub=0, out="scipy"):
     if out == "scipy":
         return H
     elif out == "petsc":
-        pH = Mat().createAIJ(size=H.shape,
-                             csr=(H.indptr, H.indices, H.data))
+        pH = Mat().createAIJ(size=H.shape, csr=(H.indptr, H.indices, H.data))
         return pH
     else:
         raise ValueError(f"out option {out} not recognised")
 
 
 def write_csr_matrix_hdf5(S, name, h5_file):
-    """ Store CSR matrix S in variable `name` in h5_file"""
+    """
+    Store CSR matrix S in variable `name` in h5_file.
+    Assumes
+
+    Parameters
+    ----------
+    S : scipy.sparse.csr_matrix
+        Sparse matrix to be saved to file.
+    name : str
+        Variable name to save the matrix into.
+    h5_file : h5py.File
+        HDF5 file object to store the matrix in. Assumed open.
+    """
     data, indices, indptr = S.data, S.indices, S.indptr
 
     h5_file[f"{name}/data"] = data
@@ -127,7 +156,18 @@ def write_csr_matrix_hdf5(S, name, h5_file):
 
 
 def read_csr_matrix_hdf5(h5_file, name, shape):
-    """ Read CSR matrix from h5py file. """
+    """
+    Read CSR matrix from h5py file.
+
+    Parameters
+    ----------
+    h5_file : h5py.File
+        HDF5 file object that the matrix is stored in.
+    name : str
+        Variable name of the matrix.
+    shape : tuple
+        Matrix dimension.
+    """
     data = h5_file[f"{name}/data"]
     indices = h5_file[f"{name}/indices"]
     indptr = h5_file[f"{name}/indptr"]

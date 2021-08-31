@@ -3,6 +3,15 @@ import pandas as pd
 
 
 def read_cell_data(filename):
+    """Read in the cell data.
+
+    Cell data is provided for the public in:
+
+    Simpson, M. J., Baker, R. E., Vittadello, S. T., & Maclaren, O. J. (2020).
+    Practical parameter identifiability for spatio-temporal models of cell
+    invasion. Journal of The Royal Society Interface, 17(164), 20200055.
+    https://doi.org/10.1098/rsif.2020.0055
+    """
     dat = pd.read_excel(filename,
                         engine="openpyxl",
                         usecols="E:U",

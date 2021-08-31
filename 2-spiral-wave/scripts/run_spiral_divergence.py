@@ -1,3 +1,5 @@
+"""Run the spiral divergence example, using the low-rank Extended Kalman
+Filter. """
 import h5py
 import logging
 
@@ -31,13 +33,16 @@ settings = {
     "scheme": "crank-nicolson"
 }
 
+# allow for changing of the underlying scheme
 if args.scheme is not None:
     settings.update({"scheme": args.scheme})
 
-# model setup
+# set the variance to 1. in case of wanting to do parameter estimation
+# (parameter estimation re-uses the factorization)
 prior = Oregonator(settings, params)
 post = StatOregonator(n_modes, n_modes_g, 1., ell, settings, params)
 
+# set initial conditions
 with h5py.File("data/bz-spiral-ic.h5", "r") as f:
     np.testing.assert_allclose(f["x"][:], post.x_u)
     ic = np.zeros((post.n_dofs, ))
@@ -46,18 +51,23 @@ with h5py.File("data/bz-spiral-ic.h5", "r") as f:
 
 prior.setup_solve(ic)
 post.setup_solve(ic)
+
+# set hparams to fixed values for the paper
 post.rho, post.sigma = rho, sigma
 
+# observations drawn from a subset of the FEM mesh
 skip = int(post.n_u_dofs // n_obs)
 x_obs = post.x_v[::skip, :]
 H = build_observation_operator(x_obs, post.V, sub=1)
 logger.info(H.shape)
 
-# timestepping
-np.random.seed(27)
+np.random.seed(27)  # for reproducibility
+
+# store outputs of the l2-norm of u, and the effective rank
 u_norm = np.zeros((nt, ))
 eff_rank = np.zeros((nt, ))
-for i in range(nt):
+
+for i in range(nt):  # run statFEM timestepping
     logger.info("Iteration %d / %d", i + 1, nt)
     prior.timestep()
 
@@ -69,6 +79,7 @@ for i in range(nt):
     logger.info("||u|| : %e", u_norm[i])
     eff_rank[i] = post.eff_rank
 
+    # choice of tolerance is arbitrary: divergence in ~25 timesteps
     if np.any(post.u >= 1e4):
         logger.error("Filter divergence, iteration %d", i + 1)
 
@@ -77,7 +88,6 @@ for i in range(nt):
         break
 
 # store results
-# output_file = f"outputs/spiral-divergence-{settings['scheme']}.h5"
 with h5py.File(args.output_file, "w") as f:
     metadata = {**settings, **params}
     for name, val in metadata.items():
