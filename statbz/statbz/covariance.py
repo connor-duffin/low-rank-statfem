@@ -46,7 +46,20 @@ def matern_covariance(grid, scale=1., ell=1., nu=2):
 
 
 def matern_spectral_density(omega, scale=1., ell=1., nu=2):
-    """Matern spectral density. """
+    """
+    Matern spectral density.
+
+    Parameters
+    ----------
+    omega : float
+        Frequency at which to evaluate the spectral density.
+    scale : float
+        Variance hyperparameter.
+    ell : float
+        Length-scale hyperparameter.
+    nu : float
+        Smoothness parameter.
+    """
     kappa = np.sqrt(2 * nu) / ell
     s = (scale**2 * np.sqrt(4 * np.pi) * gamma(nu + 1 / 2) * kappa**(2 * nu) /
          gamma(nu) * (kappa**2 + 4 * np.pi**2 * omega**2)**(-(nu + 1 / 2)))
@@ -118,20 +131,44 @@ def sq_exp_covariance(grid, scale, ell):
 
 
 def sq_exp_spectral_density(omega, scale, ell, D=1):
-    """Squared exponential spectral density. """
+    """
+    Squared exponential spectral density.
+
+    Parameters
+    ----------
+    omega : float
+        Frequency at which to evaluate the spectral density.
+    scale : float
+        Variance hyperparameter.
+    ell : float
+        Length-scale hyperparameter.
+    """
     return (scale**2 * (2 * np.pi * ell**2)**(D / 2) *
             np.exp(-omega**2 * ell**2 / 2))
 
 
 def cov_approx(V, k=64, scale=1., ell=1., bc="Dirichlet"):
-    """Approximate the SqExp covariance using Hilbert-GP.
+    """
+    Approximate the SqExp covariance using Hilbert-GP.
 
     For full details:
     Solin, A., Särkkä, S., 2020. Hilbert space methods for reduced-rank
     Gaussian process regression. Stat Comput 30, 419–446.
     https://doi.org/10.1007/s11222-019-09886-w
 
-
+    Parameters
+    ----------
+    V : fenics.FunctionSpace
+        FunctionSpace on which to compute the approximation.
+    k : int, optional
+        Number of modes to take in the approximation.
+    scale : float
+        Variance hyperparameter.
+    ell : float
+        Length-scale hyperparameter.
+    bc : str, optional
+        Boundary conditions to use in the approximation. Either 'Dirichlet' or
+        'Neumann'.
     """
     bc_types = ["Dirichlet", "Neumann"]
     if bc not in bc_types:
