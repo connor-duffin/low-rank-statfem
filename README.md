@@ -1,9 +1,19 @@
 # Low-rank statFEM for reaction-diffusion models
 
-This repo accompanies our recent paper on low-rank methods for scaling up
+This repo accompanies our recent paper [Low-rank statistical finite elements for scalable model-data synthesis](https://arxiv.org/abs/2109.04757), which can be cited as:
+```bibtex
+@article{duffin2021low,
+  title={Low-rank statistical finite elements for scalable model-data synthesis},
+  author={Duffin, Connor and Cripps, Edward and Stemler, Thomas and Girolami, Mark},
+  journal={arXiv preprint arXiv:2109.04757},
+  year={2021}
+}
+```
+
+The paper focuses on low-rank methods for scaling up
 statistical finite element methods to high-dimensional problems.
-The architecture consists of the `statbz` package, found in the `statbz`
-directory, and three separate directories for each of the case studies
+The architecture of this repo consists of the `statbz` package, found in the
+`statbz` directory, and three separate directories for each of the case studies
 (`1-cells`, `2-spiral-wave`, `3-oscillatory`). Each of these accord to different
 models that we study in the paper.
 
@@ -42,7 +52,7 @@ For the `cells` example, you need to download the data from:
 Simpson, M. J., Baker, R. E., Vittadello, S. T., & Maclaren, O. J. (2020).
 Practical parameter identifiability for spatio-temporal models of cell invasion.
 Journal of The Royal Society Interface, 17(164), 20200055.
-https://doi.org/10.1098/rsif.2020.0055
+(https://doi.org/10.1098/rsif.2020.0055)
 
 This should then be saved as `1-cells/data/rsif-data.xlsx`, to accord with the
 local Makefile.
