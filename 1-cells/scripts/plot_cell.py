@@ -164,35 +164,3 @@ axs[1].set_ylabel(
 axs[1].set_yscale("log")
 plt.savefig(args.output_dir + "cell-rel-error.png", dpi=400)
 plt.close()
-
-##########################
-# errors as modes increase
-lr_errors_mean = []
-lr_errors_var = []
-for f in args.input_files_lr:
-    output_lr = h5py.File(f, "r")
-
-    u_lr = output_lr["u"][-1, :]
-    u_lr_var = output_lr["u_var"][-1, :]
-
-    lr_errors_mean.append(norm(u[-1, :] - u_lr) / norm(u[-1, :]))
-    lr_errors_var.append(norm(u_var[-1, :] - u_lr_var) / norm(u_var[-1, :]))
-
-fig, axs = plt.subplots(1, 2, constrained_layout=True, figsize=(6, 2.5))
-axs[0].plot(args.n_modes, lr_errors_mean, ".-")
-axs[0].set_yscale("log")
-axs[0].set_ylabel(r"$\Vert \mathbf{m}_n^u - \mathbf{m}_{n, LR}^u \Vert" +
-                  r"/ \Vert \mathbf{m}_n^u \Vert$",
-                  fontsize="small")
-axs[0].set_xlabel(r"$k$ (no. of modes)")
-
-axs[1].plot(args.n_modes, lr_errors_var, ".-")
-axs[1].set_yscale("log")
-axs[1].set_xlabel(r"$k$ (no. of modes)")
-axs[1].set_ylabel(
-    r"$\Vert \mathrm{var}(\mathbf{u}_n) - \mathrm{var}(\mathbf{u}_{n, LR})\Vert"
-    + r"/ \Vert \mathrm{var}(\mathbf{u}_n) \Vert$",
-    fontsize="small")
-fig.suptitle("Error at final time $t = 60$ h")
-plt.savefig(args.output_dir + "cell-lr-modes-errors.png", dpi=400)
-plt.close()

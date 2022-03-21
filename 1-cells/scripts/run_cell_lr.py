@@ -17,6 +17,7 @@ logging.basicConfig(level=logging.INFO)
 
 parser = ArgumentParser()
 parser.add_argument("--n_modes", type=int)
+parser.add_argument("--n_modes_prior", type=int)
 parser.add_argument("--data_file", type=str)
 parser.add_argument("--output_file", type=str)
 args = parser.parse_args()
@@ -28,7 +29,8 @@ cell = Cell(settings, params)
 cell.setup_solve()
 
 # GP hyperparameters: var = 2e-3, length = 100., k' = 32
-post_lr = StatCellLowRank(2e-3, 100., settings, params, args.n_modes, 32)
+post_lr = StatCellLowRank(2e-3, 100., settings, params, args.n_modes,
+                          args.n_modes_prior)
 post_lr.setup_solve()
 
 dat = read_cell_data(args.data_file)
