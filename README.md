@@ -1,12 +1,16 @@
 # Low-rank statFEM for reaction-diffusion models
 
-This repo accompanies our recent paper [Low-rank statistical finite elements for scalable model-data synthesis](https://arxiv.org/abs/2109.04757), which can be cited as:
+This repo accompanies our JCP paper [Low-rank statistical finite elements for scalable model-data synthesis](https://doi.org/10.1016/j.jcp.2022.111261), which can be cited as:
 ```bibtex
-@article{duffin2021low,
-  title={Low-rank statistical finite elements for scalable model-data synthesis},
-  author={Duffin, Connor and Cripps, Edward and Stemler, Thomas and Girolami, Mark},
-  journal={arXiv preprint arXiv:2109.04757},
-  year={2021}
+@article{duffin2022lowrank,
+  title = {Low-Rank Statistical Finite Elements for Scalable Model-Data Synthesis},
+  author = {Duffin, Connor and Cripps, Edward and Stemler, Thomas and Girolami, Mark},
+  year = {2022},
+  month = aug,
+  journal = {Journal of Computational Physics},
+  volume = {463},
+  issn = {0021-9991},
+  doi = {10.1016/j.jcp.2022.111261}
 }
 ```
 
